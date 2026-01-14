@@ -443,7 +443,22 @@ const ApplicationDetail = () => {
                   application.detailed_ssl_info?.certificate_info &&
                   Object.keys(application.detailed_ssl_info?.certificate_info).length > 0
                     ? application.detailed_ssl_info?.certificate_info
-                    : application.detailed_ssl_info?.misc_info
+                    : (() => {
+                        // Filter misc_info to only include certificate-related data
+                        const miscInfo = application.detailed_ssl_info?.misc_info || {};
+                        const certRelatedKeys = Object.keys(miscInfo).filter(key =>
+                          key.toLowerCase().includes('cert') ||
+                          key.toLowerCase().includes('certificate') ||
+                          key.toLowerCase().includes('intermediate_cert')
+                        );
+
+                        const filteredCertInfo = {};
+                        certRelatedKeys.forEach(key => {
+                          filteredCertInfo[key] = miscInfo[key];
+                        });
+
+                        return filteredCertInfo;
+                      })()
                 )}
               </CardContent>
             </Card>
@@ -466,7 +481,41 @@ const ApplicationDetail = () => {
                 <CardTitle className="text-lg">Miscellaneous Configuration</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderDetailedSection('Miscellaneous Configuration', application.detailed_ssl_info?.misc_info)}
+                {renderDetailedSection('Miscellaneous Configuration',
+                  (() => {
+                    // Filter misc_info to exclude certificate, protocol, cipher, and vulnerability data
+                    const miscInfo = application.detailed_ssl_info?.misc_info || {};
+                    const allKeys = Object.keys(miscInfo);
+
+                    const filteredMiscInfo = {};
+                    allKeys.forEach(key => {
+                      // Exclude certificate-related keys
+                      if (key.toLowerCase().includes('cert') || key.toLowerCase().includes('certificate') || key.toLowerCase().includes('intermediate_cert')) {
+                        return;
+                      }
+                      // Exclude protocol-related keys
+                      if (key.toLowerCase().includes('tls') || key.toLowerCase().includes('ssl') || key.toLowerCase().includes('protocol')) {
+                        return;
+                      }
+                      // Exclude cipher-related keys
+                      if (key.toLowerCase().includes('cipher') || key.toLowerCase().includes('encryption')) {
+                        return;
+                      }
+                      // Exclude vulnerability-related keys
+                      if (key.toLowerCase().includes('heartbleed') || key.toLowerCase().includes('robot') || key.toLowerCase().includes('crime') ||
+                          key.toLowerCase().includes('breach') || key.toLowerCase().includes('poodle') || key.toLowerCase().includes('freak') ||
+                          key.toLowerCase().includes('logjam') || key.toLowerCase().includes('drown') || key.toLowerCase().includes('beast') ||
+                          key.toLowerCase().includes('lucky13') || key.toLowerCase().includes('opossum') || key.toLowerCase().includes('ticketbleed')) {
+                        return;
+                      }
+
+                      // Include everything else as miscellaneous
+                      filteredMiscInfo[key] = miscInfo[key];
+                    });
+
+                    return filteredMiscInfo;
+                  })()
+                )}
               </CardContent>
             </Card>
           </TabsContent>
