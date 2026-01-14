@@ -313,6 +313,7 @@ const ApplicationDetail = () => {
             <TabsTrigger value="ciphers" className="data-[state=active]:bg-gray-100">Ciphers</TabsTrigger>
             <TabsTrigger value="certificates" className="data-[state=active]:bg-gray-100">Certificates</TabsTrigger>
             <TabsTrigger value="vulnerabilities" className="data-[state=active]:bg-gray-100">Vulnerabilities</TabsTrigger>
+            <TabsTrigger value="scan-history" className="data-[state=active]:bg-gray-100">Scan History</TabsTrigger>
             <TabsTrigger value="misc" className="data-[state=active]:bg-gray-100">Miscellaneous</TabsTrigger>
           </TabsList>
 
@@ -511,6 +512,83 @@ const ApplicationDetail = () => {
 
                     return vulns;
                   })()
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="scan-history">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Scan History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {application.scan_history && application.scan_history.length > 0 ? (
+                  <div className="space-y-4">
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full">
+                        <thead>
+                          <tr className="border-b border-gray-200">
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scan ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Started At</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed At</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {application.scan_history
+                            .slice()
+                            .reverse()
+                            .map((scan) => (
+                              <tr key={scan.id} className="hover:bg-gray-50 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{scan.id}</td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {new Date(scan.started_at).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3 text-sm text-gray-600">
+                                  {new Date(scan.completed_at).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    scan.status === 'PASS' || scan.status === 'A' || scan.status === 'B' || scan.status === 'C' ? 'bg-green-100 text-green-800' :
+                                    scan.status === 'WARN' || scan.status === 'C+' ? 'bg-yellow-100 text-yellow-800' :
+                                    scan.status === 'FAIL' || scan.status === 'D' || scan.status === 'E' || scan.status === 'F' ? 'bg-red-100 text-red-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }`}>
+                                    {scan.status}
+                                  </span>
+                                </td>
+                                <td className="px-4 py-3 text-sm">
+                                  <button
+                                    className="text-blue-600 hover:text-blue-900"
+                                    onClick={() => {
+                                      // In a real implementation, this would show details of the specific scan
+                                      alert(`Scan details would be shown here for scan #${scan.id}`);
+                                    }}
+                                  >
+                                    View Details
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Showing {application.scan_history.length} scan{application.scan_history.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <p>No scan history available.</p>
+                    <p className="text-sm mt-1">Run a scan to see historical data.</p>
+                  </div>
                 )}
               </CardContent>
             </Card>
