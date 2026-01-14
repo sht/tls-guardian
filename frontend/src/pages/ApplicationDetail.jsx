@@ -470,7 +470,42 @@ const ApplicationDetail = () => {
                 <CardTitle className="text-lg">Vulnerability Scan Results</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderDetailedSection('Vulnerability Scan Results', application.detailed_ssl_info?.vulnerabilities)}
+                {renderDetailedSection('Vulnerability Scan Results',
+                  (() => {
+                    // Combine vulnerabilities from vulnerabilities section with vulnerability-related data from misc_info
+                    const vulns = { ...application.detailed_ssl_info?.vulnerabilities || {} };
+                    const miscInfo = application.detailed_ssl_info?.misc_info || {};
+
+                    // Look for vulnerability-related keys in misc_info
+                    Object.keys(miscInfo).forEach(key => {
+                      // Check if this key relates to vulnerabilities
+                      if (key.toLowerCase().includes('heartbleed') ||
+                          key.toLowerCase().includes('robot') ||
+                          key.toLowerCase().includes('crime') ||
+                          key.toLowerCase().includes('breach') ||
+                          key.toLowerCase().includes('poodle') ||
+                          key.toLowerCase().includes('freak') ||
+                          key.toLowerCase().includes('logjam') ||
+                          key.toLowerCase().includes('drown') ||
+                          key.toLowerCase().includes('beast') ||
+                          key.toLowerCase().includes('lucky13') ||
+                          key.toLowerCase().includes('opossum') ||
+                          key.toLowerCase().includes('ticketbleed') ||
+                          key.toLowerCase().includes('secure_client_renego') || // This is the one you mentioned
+                          key.toLowerCase().includes('secure_renego') ||
+                          key.toLowerCase().includes('fallback_scsv') ||
+                          key.toLowerCase().includes('sessionresumption') ||
+                          key.toLowerCase().includes('early_data') ||
+                          key.toLowerCase().includes('winshock') ||
+                          key.toLowerCase().includes('rc4') ||
+                          key.toLowerCase().includes('sweet32')) {
+                        vulns[key] = miscInfo[key];
+                      }
+                    });
+
+                    return vulns;
+                  })()
+                )}
               </CardContent>
             </Card>
           </TabsContent>
