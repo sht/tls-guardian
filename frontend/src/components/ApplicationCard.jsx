@@ -35,7 +35,15 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
         <div className="flex items-center gap-5">
           {/* Grade Badge */}
           <div className="flex-shrink-0">
-            <GradeBadge grade={application.grade || application.status} size="lg" />
+            <GradeBadge
+              grade={
+                application.grade ||  // Use calculated grade if available
+                application.overall_grade ||  // Use overall grade from detailed info if available
+                application.status ||  // Fallback to status
+                '?'  // Default to ? if nothing is available
+              }
+              size="lg"
+            />
           </div>
 
           {/* Application Info */}
