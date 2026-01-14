@@ -143,6 +143,82 @@ const ApplicationDetail = () => {
     );
   }
 
+  // Check if application has no scan data yet (initial scan in progress)
+  const hasNoScanData = !application.last_scan_time &&
+                       (!application.detailed_ssl_info || Object.keys(application.detailed_ssl_info).length === 0) &&
+                       application.scan_history && application.scan_history.length === 0;
+
+  if (hasNoScanData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <div className="container mx-auto py-6 px-4">
+          {/* Navigation */}
+          <Button
+            variant="ghost"
+            onClick={() => navigate('/')}
+            className="mb-6 text-gray-600 hover:text-gray-900"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
+          </Button>
+
+          <Card className="mb-6">
+            <CardContent className="p-6">
+              <div className="flex flex-col md:flex-row md:justify-between md:items-start gap-4">
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">{application.name}</h1>
+                  <a
+                    href={application.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mt-1"
+                  >
+                    {application.url}
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+
+                  <div className="flex flex-wrap gap-4 mt-4 text-sm">
+                    <div>
+                      <span className="text-gray-500">Last Scanned:</span>
+                      <span className="ml-2 font-medium">Never</span>
+                    </div>
+                    <div>
+                      <span className="text-gray-500">Status:</span>
+                      <span className="ml-2 font-medium text-yellow-600">Initial scan in progress...</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <Button onClick={() => fetchApplicationDetail()} disabled={loading}>
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Progress Message */}
+          <Card>
+            <CardContent className="p-12 text-center">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-6">
+                <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Initial Scan in Progress</h2>
+              <p className="text-gray-600 mb-4 max-w-md mx-auto">
+                The initial security scan for this application is currently in progress.
+                Please check back later to see the detailed SSL/TLS analysis.
+              </p>
+              <p className="text-sm text-gray-500">
+                This page will automatically refresh when scan results become available.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate grade from scan data
   const gradeInfo = calculateGrade(application);
   const overallGrade = application.grade || gradeInfo.grade;

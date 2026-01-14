@@ -60,9 +60,6 @@ const Dashboard = () => {
       if (response.ok) {
         const newAppData = await response.json();
 
-        // Show a message that initial scan is in progress
-        alert('Application added successfully. Initial scan is in progress, check back later for results.');
-
         setShowAddDialog(false);
         setNewAppUrl('');
         setNewAppName('');
