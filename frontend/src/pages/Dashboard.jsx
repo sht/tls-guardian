@@ -13,6 +13,7 @@ import { Input } from '../components/ui/input';
 import StatCard from '../components/StatCard';
 import ApplicationCard from '../components/ApplicationCard';
 import { Shield, AlertTriangle, CheckCircle, XCircle, Plus } from 'lucide-react';
+import EditApplicationDialog from '../components/EditApplicationDialog';
 
 const Dashboard = () => {
   const [applications, setApplications] = useState([]);
@@ -21,6 +22,8 @@ const Dashboard = () => {
   const [newAppUrl, setNewAppUrl] = useState('');
   const [newAppName, setNewAppName] = useState('');
   const [adding, setAdding] = useState(false);
+  const [editingApplication, setEditingApplication] = useState(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
 
   useEffect(() => {
     fetchApplications();
@@ -111,6 +114,34 @@ const Dashboard = () => {
         alert('Error deleting application');
       }
     }
+  };
+
+  const handleUpdateApplication = async (appId, newName) => {
+    try {
+      const response = await fetch(`/api/applications/${appId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ name: newName }),
+      });
+
+      if (response.ok) {
+        setShowEditDialog(false);
+        fetchApplications();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.error || 'Failed to update application');
+      }
+    } catch (error) {
+      console.error('Error updating application:', error);
+      alert('Error updating application');
+    }
+  };
+
+  const openEditDialog = (application) => {
+    setEditingApplication(application);
+    setShowEditDialog(true);
   };
 
   // Calculate statistics
@@ -285,12 +316,21 @@ const Dashboard = () => {
                   application={app}
                   onRescan={handleRescan}
                   onDelete={handleDeleteApplication}
+                  onEdit={openEditDialog}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
+      {editingApplication && (
+        <EditApplicationDialog
+          application={editingApplication}
+          open={showEditDialog}
+          onOpenChange={setShowEditDialog}
+          onSave={handleUpdateApplication}
+        />
+      )}
     </div>
   );
 };

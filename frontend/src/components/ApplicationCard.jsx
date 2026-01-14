@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import GradeBadge from './GradeBadge';
-import { RefreshCw, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { RefreshCw, Trash2, Clock, AlertCircle, Pencil } from 'lucide-react';
 
-const ApplicationCard = ({ application, onRescan, onDelete }) => {
+const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
   const navigate = useNavigate();
 
   const handleClick = () => {
@@ -66,6 +66,17 @@ const ApplicationCard = ({ application, onRescan, onDelete }) => {
 
           {/* Actions */}
           <div className="flex-shrink-0 flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(application);
+              }}
+              title="Edit"
+            >
+              <Pencil className="w-4 h-4" />
+            </Button>
             <Button
               size="sm"
               variant="outline"
