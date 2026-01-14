@@ -10,6 +10,12 @@ const gradeConfig = {
   'D': { bg: 'bg-red-400', text: 'text-white', ring: 'ring-red-200' },
   'E': { bg: 'bg-red-500', text: 'text-white', ring: 'ring-red-300' },
   'F': { bg: 'bg-red-600', text: 'text-white', ring: 'ring-red-400' },
+  // Additional status mappings
+  'PASS': { bg: 'bg-green-500', text: 'text-white', ring: 'ring-green-300' },
+  'WARN': { bg: 'bg-yellow-500', text: 'text-white', ring: 'ring-yellow-300' },
+  'WARNING': { bg: 'bg-yellow-500', text: 'text-white', ring: 'ring-yellow-300' },
+  'FAIL': { bg: 'bg-red-500', text: 'text-white', ring: 'ring-red-300' },
+  'UNKNOWN': { bg: 'bg-gray-400', text: 'text-white', ring: 'ring-gray-200' },
 };
 
 const sizeConfig = {
@@ -56,7 +62,11 @@ const GradeBadge = ({ grade, size = 'md', showLabel = false }) => {
            grade === 'B' ? 'Acceptable' :
            grade === 'C' ? 'Needs Improvement' :
            grade === 'D' || grade === 'E' ? 'Poor' :
-           grade === 'F' ? 'Critical' : 'Unknown'}
+           grade === 'F' ? 'Critical' :
+           grade === 'PASS' ? 'Pass' :
+           grade === 'WARN' || grade === 'WARNING' ? 'Warning' :
+           grade === 'FAIL' ? 'Fail' :
+           'Unknown'}
         </span>
       )}
     </div>
