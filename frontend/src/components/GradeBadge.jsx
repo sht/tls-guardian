@@ -41,6 +41,13 @@ const GradeBadge = ({ grade, size = 'md', showLabel = false }) => {
   const config = gradeConfig[grade] || { bg: 'bg-gray-400', text: 'text-white', ring: 'ring-gray-200' };
   const sizeStyle = sizeConfig[size] || sizeConfig.md;
 
+  // Map longer status values to shorter representations for display
+  const displayGrade = grade === 'PASS' ? 'P' :
+                     grade === 'WARN' || grade === 'WARNING' ? 'W' :
+                     grade === 'FAIL' ? 'F' :
+                     grade === 'UNKNOWN' ? '?' :
+                     grade || '?';
+
   return (
     <div className="flex flex-col items-center">
       <div
@@ -53,7 +60,7 @@ const GradeBadge = ({ grade, size = 'md', showLabel = false }) => {
           sizeStyle.text
         )}
       >
-        {grade || '?'}
+        {displayGrade}
       </div>
       {showLabel && (
         <span className="mt-2 text-sm font-medium text-gray-500">
