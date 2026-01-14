@@ -199,7 +199,7 @@ const Dashboard = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">SSL Hygiene Monitor</h1>
+            <h1 className="text-3xl font-bold text-gray-900">TLS Guardian</h1>
             <p className="text-gray-500 mt-1">Monitor SSL/TLS security posture of your applications</p>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
