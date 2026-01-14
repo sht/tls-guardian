@@ -19,32 +19,32 @@ export function calculateGrade(application) {
   // Calculate protocol score based on supported protocols
   if (detailedInfo.protocol_info) {
     const protocols = detailedInfo.protocol_info;
-    
+
     // Check for TLS 1.3 support (excellent)
-    if (protocols['tls_1_3'] && protocols['tls_1_3'].finding.toLowerCase().includes('offered')) {
+    if (protocols['TLS1_3'] && protocols['TLS1_3'].finding.toLowerCase().includes('offered')) {
       protocolScore += 30;
     }
-    
+
     // Check for TLS 1.2 support (good)
-    if (protocols['tls_1_2'] && protocols['tls_1_2'].finding.toLowerCase().includes('offered')) {
+    if (protocols['TLS1_2'] && protocols['TLS1_2'].finding.toLowerCase().includes('offered')) {
       protocolScore += 20;
     }
-    
+
     // Penalize for TLS 1.0/1.1 support (bad)
-    if (protocols['tls_1_0'] && protocols['tls_1_0'].finding.toLowerCase().includes('offered')) {
+    if (protocols['TLS1'] && protocols['TLS1'].finding.toLowerCase().includes('offered')) {
       protocolScore -= 20;
     }
-    
-    if (protocols['tls_1_1'] && protocols['tls_1_1'].finding.toLowerCase().includes('offered')) {
+
+    if (protocols['TLS1_1'] && protocols['TLS1_1'].finding.toLowerCase().includes('offered')) {
       protocolScore -= 15;
     }
-    
+
     // Penalize for SSL 2.0/3.0 support (very bad)
-    if (protocols['ssl_v2'] && protocols['ssl_v2'].finding.toLowerCase().includes('offered')) {
+    if (protocols['SSLv2'] && protocols['SSLv2'].finding.toLowerCase().includes('offered')) {
       protocolScore -= 30;
     }
-    
-    if (protocols['ssl_v3'] && protocols['ssl_v3'].finding.toLowerCase().includes('offered')) {
+
+    if (protocols['SSLv3'] && protocols['SSLv3'].finding.toLowerCase().includes('offered')) {
       protocolScore -= 25;
     }
   }
@@ -52,12 +52,12 @@ export function calculateGrade(application) {
   // Calculate key exchange score based on certificate strength
   if (detailedInfo.certificate_info) {
     const certInfo = detailedInfo.certificate_info;
-    
+
     // Check key size
-    if (certInfo['key_size']) {
-      const keySizeMatch = certInfo['key_size'].finding.match(/\d+/);
+    if (certInfo['cert_keySize']) {
+      const keySizeMatch = certInfo['cert_keySize'].finding.match(/(\d+)\s*bits/);
       if (keySizeMatch) {
-        const keySize = parseInt(keySizeMatch[0]);
+        const keySize = parseInt(keySizeMatch[1]);
         if (keySize >= 4096) {
           keyExchangeScore += 25;
         } else if (keySize >= 2048) {
@@ -69,10 +69,10 @@ export function calculateGrade(application) {
         }
       }
     }
-    
+
     // Check signature algorithm
-    if (certInfo['signature_algorithm']) {
-      const sigAlg = certInfo['signature_algorithm'].finding.toLowerCase();
+    if (certInfo['cert_signatureAlgorithm']) {
+      const sigAlg = certInfo['cert_signatureAlgorithm'].finding.toLowerCase();
       if (sigAlg.includes('sha256') || sigAlg.includes('sha384') || sigAlg.includes('sha512')) {
         keyExchangeScore += 15;
       } else if (sigAlg.includes('sha1')) {
@@ -84,24 +84,24 @@ export function calculateGrade(application) {
   // Calculate cipher score based on supported ciphers
   if (detailedInfo.cipher_info) {
     const ciphers = detailedInfo.cipher_info;
-    
+
     // Count strong ciphers
     let strongCiphers = 0;
     let weakCiphers = 0;
-    
+
     for (const [key, value] of Object.entries(ciphers)) {
       const finding = value.finding.toLowerCase();
-      
-      if (key.includes('strong') && finding.includes('offered')) {
+
+      if (key.includes('STRONG') && finding.includes('offered')) {
         strongCiphers++;
       }
-      
-      if (key.includes('weak') || key.includes('null') || key.includes('export') || 
+
+      if (key.includes('weak') || key.includes('null') || key.includes('export') || key.includes('LOW') || key.includes('NULL') ||
           finding.includes('rc4') || finding.includes('3des') || finding.includes('idea')) {
         weakCiphers++;
       }
     }
-    
+
     cipherScore += Math.min(strongCiphers * 5, 30); // Cap at 30 points
     cipherScore -= Math.min(weakCiphers * 10, 30); // Max penalty of 30 points
   }
