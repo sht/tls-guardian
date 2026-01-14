@@ -439,7 +439,12 @@ const ApplicationDetail = () => {
                 <CardTitle className="text-lg">Certificate Information</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderDetailedSection('Certificate Information', application.detailed_ssl_info?.certificate_info)}
+                {renderDetailedSection('Certificate Information',
+                  application.detailed_ssl_info?.certificate_info &&
+                  Object.keys(application.detailed_ssl_info?.certificate_info).length > 0
+                    ? application.detailed_ssl_info?.certificate_info
+                    : application.detailed_ssl_info?.misc_info
+                )}
               </CardContent>
             </Card>
           </TabsContent>
