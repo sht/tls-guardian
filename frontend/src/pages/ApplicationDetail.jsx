@@ -529,20 +529,19 @@ const ApplicationDetail = () => {
                       <table className="min-w-full">
                         <thead>
                           <tr className="border-b border-gray-200">
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Scan ID</th>
+                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">#</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Started At</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed At</th>
                             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {application.scan_history
                             .slice()
                             .reverse()
-                            .map((scan) => (
+                            .map((scan, index) => (
                               <tr key={scan.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">#{scan.id}</td>
+                                <td className="px-4 py-3 text-sm font-medium text-gray-900">{index + 1}</td>
                                 <td className="px-4 py-3 text-sm text-gray-600">
                                   {new Date(scan.started_at).toLocaleString()}
                                 </td>
@@ -558,17 +557,6 @@ const ApplicationDetail = () => {
                                   }`}>
                                     {scan.status}
                                   </span>
-                                </td>
-                                <td className="px-4 py-3 text-sm">
-                                  <button
-                                    className="text-blue-600 hover:text-blue-900"
-                                    onClick={() => {
-                                      // In a real implementation, this would show details of the specific scan
-                                      alert(`Scan details would be shown here for scan #${scan.id}`);
-                                    }}
-                                  >
-                                    View Details
-                                  </button>
                                 </td>
                               </tr>
                             ))}
