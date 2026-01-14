@@ -478,6 +478,8 @@ const ApplicationDetail = () => {
 
                     // Look for vulnerability-related keys in misc_info
                     Object.keys(miscInfo).forEach(key => {
+                      const entry = miscInfo[key];
+
                       // Check if this key relates to vulnerabilities
                       if (key.toLowerCase().includes('heartbleed') ||
                           key.toLowerCase().includes('robot') ||
@@ -499,7 +501,11 @@ const ApplicationDetail = () => {
                           key.toLowerCase().includes('winshock') ||
                           key.toLowerCase().includes('rc4') ||
                           key.toLowerCase().includes('sweet32')) {
-                        vulns[key] = miscInfo[key];
+
+                        // Only add to vulnerabilities if it's actually a vulnerability (not OK/INFO)
+                        if (entry.severity && !['OK', 'INFO'].includes(entry.severity.toUpperCase())) {
+                          vulns[key] = entry;
+                        }
                       }
                     });
 
@@ -536,12 +542,21 @@ const ApplicationDetail = () => {
                       if (key.toLowerCase().includes('cipher') || key.toLowerCase().includes('encryption')) {
                         return;
                       }
-                      // Exclude vulnerability-related keys
+                      // Handle vulnerability-related keys: only include if they have OK/INFO severity
                       if (key.toLowerCase().includes('heartbleed') || key.toLowerCase().includes('robot') || key.toLowerCase().includes('crime') ||
                           key.toLowerCase().includes('breach') || key.toLowerCase().includes('poodle') || key.toLowerCase().includes('freak') ||
                           key.toLowerCase().includes('logjam') || key.toLowerCase().includes('drown') || key.toLowerCase().includes('beast') ||
-                          key.toLowerCase().includes('lucky13') || key.toLowerCase().includes('opossum') || key.toLowerCase().includes('ticketbleed')) {
-                        return;
+                          key.toLowerCase().includes('lucky13') || key.toLowerCase().includes('opossum') || key.toLowerCase().includes('ticketbleed') ||
+                          key.toLowerCase().includes('secure_client_renego') || key.toLowerCase().includes('secure_renego') ||
+                          key.toLowerCase().includes('fallback_scsv') || key.toLowerCase().includes('sessionresumption') ||
+                          key.toLowerCase().includes('early_data') || key.toLowerCase().includes('winshock') ||
+                          key.toLowerCase().includes('rc4') || key.toLowerCase().includes('sweet32')) {
+                        // Only include vulnerability-related entries with OK/INFO severity in misc
+                        const entry = miscInfo[key];
+                        if (entry.severity && ['OK', 'INFO'].includes(entry.severity.toUpperCase())) {
+                          filteredMiscInfo[key] = entry;
+                        }
+                        return; // Skip if not OK/INFO severity (they go to vulnerabilities tab)
                       }
 
                       // Include everything else as miscellaneous
