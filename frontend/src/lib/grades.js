@@ -90,34 +90,35 @@ export function calculateGrade(application) {
   }
 
   // Calculate key exchange score based on certificate strength
-  if (detailedInfo.certificate_info) {
-    const certInfo = detailedInfo.certificate_info;
+  // First check certificate_info, then fall back to misc_info if certificate_info is empty
+  const certInfo = detailedInfo.certificate_info && Object.keys(detailedInfo.certificate_info).length > 0
+    ? detailedInfo.certificate_info
+    : detailedInfo.misc_info;
 
-    // Check key size
-    if (certInfo['cert_keySize']) {
-      const keySizeMatch = certInfo['cert_keySize'].finding.match(/(\d+)\s*bits/);
-      if (keySizeMatch) {
-        const keySize = parseInt(keySizeMatch[1]);
-        if (keySize >= 4096) {
-          keyExchangeScore += 25;
-        } else if (keySize >= 2048) {
-          keyExchangeScore += 20;
-        } else if (keySize >= 1024) {
-          keyExchangeScore += 10;
-        } else {
-          keyExchangeScore -= 20; // Weak key size
-        }
+  // Check key size
+  if (certInfo['cert_keySize']) {
+    const keySizeMatch = certInfo['cert_keySize'].finding.match(/(\d+)\s*bits/);
+    if (keySizeMatch) {
+      const keySize = parseInt(keySizeMatch[1]);
+      if (keySize >= 4096) {
+        keyExchangeScore += 25;
+      } else if (keySize >= 2048) {
+        keyExchangeScore += 20;
+      } else if (keySize >= 1024) {
+        keyExchangeScore += 10;
+      } else {
+        keyExchangeScore -= 20; // Weak key size
       }
     }
+  }
 
-    // Check signature algorithm
-    if (certInfo['cert_signatureAlgorithm']) {
-      const sigAlg = certInfo['cert_signatureAlgorithm'].finding.toLowerCase();
-      if (sigAlg.includes('sha256') || sigAlg.includes('sha384') || sigAlg.includes('sha512')) {
-        keyExchangeScore += 15;
-      } else if (sigAlg.includes('sha1')) {
-        keyExchangeScore -= 10; // SHA-1 is deprecated
-      }
+  // Check signature algorithm
+  if (certInfo['cert_signatureAlgorithm']) {
+    const sigAlg = certInfo['cert_signatureAlgorithm'].finding.toLowerCase();
+    if (sigAlg.includes('sha256') || sigAlg.includes('sha384') || sigAlg.includes('sha512')) {
+      keyExchangeScore += 15;
+    } else if (sigAlg.includes('sha1')) {
+      keyExchangeScore -= 10; // SHA-1 is deprecated
     }
   }
 
