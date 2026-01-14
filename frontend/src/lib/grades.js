@@ -26,6 +26,36 @@ export function calculateGrade(application) {
     overallScore = parseInt(miscInfo.final_score.finding) || 0;
   }
 
+  // Also try to get detailed scores from the API
+  let apiProtocolScore = 0;
+  let apiKeyExchangeScore = 0;
+  let apiCipherScore = 0;
+
+  if (miscInfo.protocol_support_score && miscInfo.protocol_support_score.finding) {
+    apiProtocolScore = parseInt(miscInfo.protocol_support_score.finding) || 0;
+  }
+
+  if (miscInfo.key_exchange_score && miscInfo.key_exchange_score.finding) {
+    apiKeyExchangeScore = parseInt(miscInfo.key_exchange_score.finding) || 0;
+  }
+
+  if (miscInfo.cipher_strength_score && miscInfo.cipher_strength_score.finding) {
+    apiCipherScore = parseInt(miscInfo.cipher_strength_score.finding) || 0;
+  }
+
+  // If we have detailed scores from the API, use them
+  if (apiProtocolScore > 0 || apiKeyExchangeScore > 0 || apiCipherScore > 0) {
+    return {
+      grade: grade !== 'N/A' ? grade : 'T', // Use API grade if available, otherwise default
+      score: overallScore > 0 ? overallScore : 0,
+      details: {
+        protocolScore: apiProtocolScore,
+        keyExchangeScore: apiKeyExchangeScore,
+        cipherScore: apiCipherScore
+      }
+    };
+  }
+
   // Calculate protocol score based on supported protocols
   if (detailedInfo.protocol_info) {
     const protocols = detailedInfo.protocol_info;
