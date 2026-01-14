@@ -539,27 +539,31 @@ const ApplicationDetail = () => {
                           {application.scan_history
                             .slice()
                             .reverse()
-                            .map((scan, index) => (
-                              <tr key={scan.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-4 py-3 text-sm font-medium text-gray-900">{index + 1}</td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  {new Date(scan.started_at).toLocaleString()}
-                                </td>
-                                <td className="px-4 py-3 text-sm text-gray-600">
-                                  {new Date(scan.completed_at).toLocaleString()}
-                                </td>
-                                <td className="px-4 py-3">
-                                  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                                    scan.status === 'PASS' || scan.status === 'A' || scan.status === 'B' || scan.status === 'C' ? 'bg-green-100 text-green-800' :
-                                    scan.status === 'WARN' || scan.status === 'C+' ? 'bg-yellow-100 text-yellow-800' :
-                                    scan.status === 'FAIL' || scan.status === 'D' || scan.status === 'E' || scan.status === 'F' ? 'bg-red-100 text-red-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }`}>
-                                    {scan.status}
-                                  </span>
-                                </td>
-                              </tr>
-                            ))}
+                            .map((scan, index) => {
+                              // Calculate the actual rank (1 for most recent, 2 for second most recent, etc.)
+                              const rank = index + 1;
+                              return (
+                                <tr key={scan.id} className="hover:bg-gray-50 transition-colors">
+                                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{rank}</td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {new Date(scan.started_at).toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3 text-sm text-gray-600">
+                                    {new Date(scan.completed_at).toLocaleString()}
+                                  </td>
+                                  <td className="px-4 py-3">
+                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                      scan.status === 'PASS' || scan.status === 'A' || scan.status === 'B' || scan.status === 'C' ? 'bg-green-100 text-green-800' :
+                                      scan.status === 'WARN' || scan.status === 'C+' ? 'bg-yellow-100 text-yellow-800' :
+                                      scan.status === 'FAIL' || scan.status === 'D' || scan.status === 'E' || scan.status === 'F' ? 'bg-red-100 text-red-800' :
+                                      'bg-gray-100 text-gray-800'
+                                    }`}>
+                                      {scan.status}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
                         </tbody>
                       </table>
                     </div>
