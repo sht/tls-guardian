@@ -13,9 +13,19 @@ export function calculateGrade(application) {
   let overallScore = 0;
   let grade = 'N/A';
 
-  // Extract scan data if available
+  // First, try to get grade and score from the API if available
   const detailedInfo = application.detailed_ssl_info || {};
-  
+  const miscInfo = detailedInfo.misc_info || {};
+
+  // Check if overall grade and final score are provided by the API
+  if (miscInfo.overall_grade && miscInfo.overall_grade.finding) {
+    grade = miscInfo.overall_grade.finding;
+  }
+
+  if (miscInfo.final_score && miscInfo.final_score.finding) {
+    overallScore = parseInt(miscInfo.final_score.finding) || 0;
+  }
+
   // Calculate protocol score based on supported protocols
   if (detailedInfo.protocol_info) {
     const protocols = detailedInfo.protocol_info;
@@ -48,7 +58,7 @@ export function calculateGrade(application) {
       protocolScore -= 25;
     }
   }
-  
+
   // Calculate key exchange score based on certificate strength
   if (detailedInfo.certificate_info) {
     const certInfo = detailedInfo.certificate_info;
@@ -80,7 +90,7 @@ export function calculateGrade(application) {
       }
     }
   }
-  
+
   // Calculate cipher score based on supported ciphers
   if (detailedInfo.cipher_info) {
     const ciphers = detailedInfo.cipher_info;
@@ -105,31 +115,42 @@ export function calculateGrade(application) {
     cipherScore += Math.min(strongCiphers * 5, 30); // Cap at 30 points
     cipherScore -= Math.min(weakCiphers * 10, 30); // Max penalty of 30 points
   }
-  
+
   // Calculate overall score (ensure it's within bounds)
-  overallScore = Math.max(0, Math.min(100, protocolScore + keyExchangeScore + cipherScore));
-  
-  // Determine grade based on overall score
-  if (overallScore >= 90) {
-    grade = 'A+';
-  } else if (overallScore >= 80) {
-    grade = 'A';
-  } else if (overallScore >= 70) {
-    grade = 'B+';
-  } else if (overallScore >= 60) {
-    grade = 'B';
-  } else if (overallScore >= 50) {
-    grade = 'C+';
-  } else if (overallScore >= 40) {
-    grade = 'C';
-  } else if (overallScore >= 30) {
-    grade = 'D';
-  } else if (overallScore >= 20) {
-    grade = 'E';
-  } else if (overallScore >= 10) {
-    grade = 'F';
-  } else {
-    grade = 'T';
+  let calculatedOverallScore = Math.max(0, Math.min(100, protocolScore + keyExchangeScore + cipherScore));
+
+  // Determine grade based on calculated score if not provided by API
+  let calculatedGrade = grade; // Use API grade if available, otherwise calculate
+  if (grade === 'N/A' || overallScore === 0) {
+    if (calculatedOverallScore >= 90) {
+      calculatedGrade = 'A+';
+    } else if (calculatedOverallScore >= 80) {
+      calculatedGrade = 'A';
+    } else if (calculatedOverallScore >= 70) {
+      calculatedGrade = 'B+';
+    } else if (calculatedOverallScore >= 60) {
+      calculatedGrade = 'B';
+    } else if (calculatedOverallScore >= 50) {
+      calculatedGrade = 'C+';
+    } else if (calculatedOverallScore >= 40) {
+      calculatedGrade = 'C';
+    } else if (calculatedOverallScore >= 30) {
+      calculatedGrade = 'D';
+    } else if (calculatedOverallScore >= 20) {
+      calculatedGrade = 'E';
+    } else if (calculatedOverallScore >= 10) {
+      calculatedGrade = 'F';
+    } else {
+      calculatedGrade = 'T';
+    }
+
+    // Use calculated values if API values weren't available
+    if (grade === 'N/A') {
+      grade = calculatedGrade;
+    }
+    if (overallScore === 0) {
+      overallScore = calculatedOverallScore;
+    }
   }
   
   return {
