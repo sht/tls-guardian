@@ -58,9 +58,27 @@ const Dashboard = () => {
       });
 
       if (response.ok) {
+        const newAppData = await response.json();
+
+        // Show a message that initial scan is in progress
+        alert('Application added successfully. Initial scan is in progress, check back later for results.');
+
         setShowAddDialog(false);
         setNewAppUrl('');
         setNewAppName('');
+
+        // Trigger an immediate scan for the newly added application
+        const scanResponse = await fetch(`/api/scan/${newAppData.id}`, {
+          method: 'POST',
+        });
+
+        if (scanResponse.ok) {
+          console.log('Initial scan initiated for new application');
+        } else {
+          console.error('Failed to initiate initial scan for new application');
+        }
+
+        // Refresh the applications list
         fetchApplications();
       } else {
         const errorData = await response.json();
