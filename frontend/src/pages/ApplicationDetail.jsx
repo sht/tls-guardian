@@ -538,7 +538,7 @@ const ApplicationDetail = () => {
                         <tbody className="divide-y divide-gray-100">
                           {application.scan_history
                             .slice()
-                            .reverse()
+                            .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at)) // Sort by completed_at, most recent first
                             .map((scan, index) => {
                               // Calculate the actual rank (1 for most recent, 2 for second most recent, etc.)
                               const rank = index + 1;
