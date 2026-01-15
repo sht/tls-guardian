@@ -60,71 +60,110 @@ def evaluate_ssl_policy(scan_results: Dict) -> Tuple[Severity, List[Finding], De
 def _check_fail_conditions(scan_results: Dict) -> List[Finding]:
     """Check for conditions that result in FAIL status."""
     findings = []
-    
+
+    # Handle the case where scanResults is an array (when multiple IPs are tested)
+    # Just use the first result for now
+    if 'scanResult' in scan_results and isinstance(scan_results['scanResult'], list):
+        if len(scan_results['scanResult']) > 0:
+            scan_data = scan_results['scanResult'][0]
+        else:
+            scan_data = {}
+    else:
+        scan_data = scan_results
+
     # Check for TLS 1.0 or TLS 1.1 enabled
-    tls_protocols = scan_results.get('tls-protocols', {})
-    for protocol, data in tls_protocols.items():
-        if data.get('finding') and ('1.0' in protocol or '1.1' in protocol):
-            if data.get('severity') in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']:
+    protocols_list = scan_data.get('protocols', [])
+    for protocol_entry in protocols_list:
+        protocol_id = protocol_entry.get('id', 'unknown')
+        if protocol_entry.get('finding') and ('TLS1_0' in protocol_id or 'TLS1_1' in protocol_id or 'TLS1' in protocol_id):
+            if protocol_entry.get('severity') in ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']:
                 findings.append(Finding(
                     category='protocol',
-                    name=protocol.upper(),
-                    description=f'{protocol.upper()} is enabled and considered insecure',
+                    name=protocol_id.upper(),
+                    description=f'{protocol_id.upper()} is enabled and considered insecure',
                     severity=Severity.FAIL
                 ))
     
     # Check for weak ciphers (RC4, 3DES, CBC-based suites)
-    cipher_results = scan_results.get('cipher-strengths', {})
-    for cipher_type, data in cipher_results.items():
-        if data.get('severity') in ['HIGH', 'CRITICAL']:
-            if 'RC4' in data.get('finding', '') or '3DES' in data.get('finding', ''):
-                findings.append(Finding(
-                    category='cipher',
-                    name=cipher_type,
-                    description=f'Weak cipher suite detected: {data.get("finding", "")}',
-                    severity=Severity.FAIL
-                ))
-    
+    # Look for cipher-related entries in the scan data
+    for key, value in scan_data.items():
+        if 'cipher' in key.lower() or 'encryption' in key.lower():
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict) and item.get('severity') in ['HIGH', 'CRITICAL']:
+                        if 'RC4' in item.get('finding', '') or '3DES' in item.get('finding', ''):
+                            findings.append(Finding(
+                                category='cipher',
+                                name=item.get('id', key),
+                                description=f'Weak cipher suite detected: {item.get("finding", "")}',
+                                severity=Severity.FAIL
+                            ))
+            elif isinstance(value, dict) and value.get('severity') in ['HIGH', 'CRITICAL']:
+                if 'RC4' in value.get('finding', '') or '3DES' in value.get('finding', ''):
+                    findings.append(Finding(
+                        category='cipher',
+                        name=value.get('id', key),
+                        description=f'Weak cipher suite detected: {value.get("finding", "")}',
+                        severity=Severity.FAIL
+                    ))
+
     # Check for RSA key length < 2048 bits
-    cert_results = scan_results.get('cert-rsa-signature', {})
-    if cert_results.get('severity') in ['HIGH', 'CRITICAL']:
-        if 'keySize' in cert_results.get('finding', '').lower():
-            findings.append(Finding(
-                category='certificate',
-                name='CERT_KEY_SIZE',
-                description='Certificate RSA key length is less than 2048 bits',
-                severity=Severity.FAIL
-            ))
-    
+    # Look for certificate-related entries in the scan data
+    for key, value in scan_data.items():
+        if 'cert' in key.lower() and 'rsa' in key.lower():
+            # Check if value is a dictionary before calling .get()
+            if isinstance(value, dict) and value.get('severity') in ['HIGH', 'CRITICAL']:
+                if 'keySize' in value.get('finding', '').lower() or '2048' not in value.get('finding', '2048'):
+                    findings.append(Finding(
+                        category='certificate',
+                        name='CERT_KEY_SIZE',
+                        description='Certificate RSA key length is less than 2048 bits',
+                        severity=Severity.FAIL
+                    ))
+
     # Check for certificate expiration or invalidity
-    cert_status = scan_results.get('cert-validity', {})
-    if cert_status.get('severity') in ['HIGH', 'CRITICAL']:
-        if 'expired' in cert_status.get('finding', '').lower():
-            findings.append(Finding(
-                category='certificate',
-                name='CERT_EXPIRED',
-                description='Certificate is expired',
-                severity=Severity.FAIL
-            ))
-        elif 'not valid' in cert_status.get('finding', '').lower():
-            findings.append(Finding(
-                category='certificate',
-                name='CERT_INVALID',
-                description='Certificate is invalid',
-                severity=Severity.FAIL
-            ))
-    
+    # Look for certificate validity entries in the scan data
+    for key, value in scan_data.items():
+        if 'cert' in key.lower() and 'valid' in key.lower():
+            # Check if value is a dictionary before calling .get()
+            if isinstance(value, dict) and value.get('severity') in ['HIGH', 'CRITICAL']:
+                if 'expired' in value.get('finding', '').lower():
+                    findings.append(Finding(
+                        category='certificate',
+                        name='CERT_EXPIRED',
+                        description='Certificate is expired',
+                        severity=Severity.FAIL
+                    ))
+                elif 'not valid' in value.get('finding', '').lower():
+                    findings.append(Finding(
+                        category='certificate',
+                        name='CERT_INVALID',
+                        description='Certificate is invalid',
+                        severity=Severity.FAIL
+                    ))
+
     return findings
 
 def _check_warn_conditions(scan_results: Dict) -> List[Finding]:
     """Check for conditions that result in WARN status."""
     findings = []
 
+    # Handle the case where scanResults is an array (when multiple IPs are tested)
+    # Just use the first result for now
+    if 'scanResult' in scan_results and isinstance(scan_results['scanResult'], list):
+        if len(scan_results['scanResult']) > 0:
+            scan_data = scan_results['scanResult'][0]
+        else:
+            scan_data = {}
+    else:
+        scan_data = scan_results
+
     # Check if TLS 1.3 is not enabled
-    tls_protocols = scan_results.get('tls-protocols', {})
+    protocols_list = scan_data.get('protocols', [])
     tls_13_enabled = False
-    for protocol, data in tls_protocols.items():
-        if '1.3' in protocol and data.get('severity') == 'OK':
+    for protocol_entry in protocols_list:
+        protocol_id = protocol_entry.get('id', 'unknown')
+        if 'TLS1_3' in protocol_id and protocol_entry.get('severity') == 'OK':
             tls_13_enabled = True
             break
 
@@ -137,30 +176,36 @@ def _check_warn_conditions(scan_results: Dict) -> List[Finding]:
         ))
 
     # Check for missing OCSP stapling
-    ocsp_results = scan_results.get('ocsp-stapling', {})
-    if ocsp_results.get('severity') in ['LOW', 'MEDIUM']:
-        findings.append(Finding(
-            category='configuration',
-            name='OCSP_STAPLING_MISSING',
-            description='OCSP stapling is not configured',
-            severity=Severity.WARN
-        ))
-
-    # Check for certificate expiring in < 30 days
-    cert_expiration = scan_results.get('cert-expiration-date', {})
-    if cert_expiration.get('severity') in ['MEDIUM', 'HIGH']:
-        if 'days' in cert_expiration.get('finding', ''):
-            days_str = cert_expiration['finding']
-            # Extract days from string like "Certificate expires in 15 days"
-            import re
-            match = re.search(r'(\d+)', days_str)
-            if match and int(match.group(1)) < 30:
+    # Look for OCSP stapling entries in the scan data
+    for key, value in scan_data.items():
+        if 'ocsp' in key.lower():
+            # Check if value is a dictionary before calling .get()
+            if isinstance(value, dict) and value.get('severity') in ['LOW', 'MEDIUM']:
                 findings.append(Finding(
-                    category='certificate',
-                    name='CERT_EXPIRING_SOON',
-                    description=f'Certificate expires in {match.group(1)} days (< 30 days)',
+                    category='configuration',
+                    name='OCSP_STAPLING_MISSING',
+                    description='OCSP stapling is not configured',
                     severity=Severity.WARN
                 ))
+
+    # Check for certificate expiring in < 30 days
+    # Look for certificate expiration entries in the scan data
+    for key, value in scan_data.items():
+        if 'cert' in key.lower() and 'expir' in key.lower():
+            # Check if value is a dictionary before calling .get()
+            if isinstance(value, dict) and value.get('severity') in ['MEDIUM', 'HIGH']:
+                if 'days' in value.get('finding', ''):
+                    days_str = value['finding']
+                    # Extract days from string like "Certificate expires in 15 days"
+                    import re
+                    match = re.search(r'(\d+)', days_str)
+                    if match and int(match.group(1)) < 30:
+                        findings.append(Finding(
+                            category='certificate',
+                            name='CERT_EXPIRING_SOON',
+                            description=f'Certificate expires in {match.group(1)} days (< 30 days)',
+                            severity=Severity.WARN
+                        ))
 
     return findings
 
@@ -409,50 +454,59 @@ def extract_misc_info(scan_data: Dict) -> Dict:
 
 # Example usage:
 def example_usage():
-    # Example testssl.sh JSON output structure
+    # Example testssl.sh JSON output structure (updated to match actual structure)
     example_scan_results = {
-        "serverDefaults": {
-            "ip": "192.168.1.1",
-            "port": 443,
-            "hostname": "example.com"
-        },
-        "tls-protocols": {
-            "TLS1.0": {
-                "id": "TLS1.0",
-                "severity": "HIGH",
-                "finding": "TLS1.0 is offered"
-            },
-            "TLS1.1": {
-                "id": "TLS1.1",
-                "severity": "MEDIUM",
-                "finding": "TLS1.1 is offered"
-            },
-            "TLS1.2": {
-                "id": "TLS1.2",
-                "severity": "OK",
-                "finding": "TLS1.2 is offered"
-            },
-            "TLS1.3": {
-                "id": "TLS1.3",
-                "severity": "OK",
-                "finding": "TLS1.3 is offered"
+        "scanResult": [
+            {
+                "targetHost": "example.com",
+                "ip": "192.168.1.1",
+                "port": "443",
+                "service": "HTTP",
+                "protocols": [
+                    {
+                        "id": "TLS1",
+                        "severity": "HIGH",
+                        "finding": "offered (deprecated)"
+                    },
+                    {
+                        "id": "TLS1_1",
+                        "severity": "MEDIUM",
+                        "finding": "offered (deprecated)"
+                    },
+                    {
+                        "id": "TLS1_2",
+                        "severity": "OK",
+                        "finding": "offered"
+                    },
+                    {
+                        "id": "TLS1_3",
+                        "severity": "OK",
+                        "finding": "offered (final)"
+                    }
+                ],
+                "cert_rsa_signature": [
+                    {
+                        "id": "cert_signatureAlgorithm",
+                        "severity": "OK",
+                        "finding": "SHA256 with RSA 2048 bit"
+                    }
+                ],
+                "cert_validity": [
+                    {
+                        "id": "cert_notAfter",
+                        "severity": "OK",
+                        "finding": "2025-12-31"
+                    }
+                ],
+                "ocsp_stapling": [
+                    {
+                        "id": "cert_ocspStapling",
+                        "severity": "MEDIUM",
+                        "finding": "not offered"
+                    }
+                ]
             }
-        },
-        "cert-rsa-signature": {
-            "id": "cert_signatureAlgorithm",
-            "severity": "OK",
-            "finding": "SHA256 with RSA 2048 bit"
-        },
-        "cert-validity": {
-            "id": "cert_notAfter",
-            "severity": "OK",
-            "finding": "2025-12-31"
-        },
-        "ocsp-stapling": {
-            "id": "cert_ocspStapling",
-            "severity": "MEDIUM",
-            "finding": "not offered"
-        }
+        ]
     }
 
     status, findings, detailed_info = evaluate_ssl_policy(example_scan_results)

@@ -2,6 +2,7 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import datetime
+import json
 import logging
 import sys
 import os
@@ -62,14 +63,22 @@ class SSLScanScheduler:
                     scan_end_time = datetime.utcnow()
                     
                     # Evaluate the results
-                    status, findings = evaluate_ssl_policy(scan_results)
-                    
+                    status, findings, detailed_info = evaluate_ssl_policy(scan_results)
+
                     # Create scan record
                     scan = Scan(
                         application_id=app.id,
                         status=status.value,
                         started_at=scan_start_time,
-                        completed_at=scan_end_time
+                        completed_at=scan_end_time,
+                        detailed_ssl_info=json.dumps({
+                            'protocol_info': detailed_info.protocol_info,
+                            'cipher_info': detailed_info.cipher_info,
+                            'certificate_info': detailed_info.certificate_info,
+                            'vulnerabilities': detailed_info.vulnerabilities,
+                            'handshake_simulation': detailed_info.handshake_simulation,
+                            'misc_info': detailed_info.misc_info
+                        })
                     )
                     
                     db.session.add(scan)
@@ -160,13 +169,21 @@ class SSLScanScheduler:
                 scan_results = self.scanner.scan_url(app.url)
                 scan_end_time = datetime.utcnow()
                 
-                status, findings = evaluate_ssl_policy(scan_results)
-                
+                status, findings, detailed_info = evaluate_ssl_policy(scan_results)
+
                 scan = Scan(
                     application_id=app.id,
                     status=status.value,
                     started_at=scan_start_time,
-                    completed_at=scan_end_time
+                    completed_at=scan_end_time,
+                    detailed_ssl_info=json.dumps({
+                        'protocol_info': detailed_info.protocol_info,
+                        'cipher_info': detailed_info.cipher_info,
+                        'certificate_info': detailed_info.certificate_info,
+                        'vulnerabilities': detailed_info.vulnerabilities,
+                        'handshake_simulation': detailed_info.handshake_simulation,
+                        'misc_info': detailed_info.misc_info
+                    })
                 )
                 
                 db.session.add(scan)
