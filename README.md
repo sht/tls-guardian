@@ -48,7 +48,7 @@ The application can be configured using environment variables in a `.env` file:
 
 ```bash
 # Database configuration
-DATABASE_URL=postgresql://tls_user:tls_password@db:5433/tls_guardian
+DATABASE_URL=postgresql://tls_user:tls_password@db:5432/tls_guardian
 
 # Timezone for scheduler (default: UTC)
 TZ=UTC

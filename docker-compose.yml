@@ -28,7 +28,7 @@ services:
       db:
         condition: service_healthy
     environment:
-      - DATABASE_URL=postgresql://tls_user:tls_password@db:5433/tls_guardian
+      - DATABASE_URL=postgresql://tls_user:tls_password@db:5432/tls_guardian
       - TESTSSL_PATH=/usr/local/bin/testssl.sh
     ports:
       - "5001:5000"
@@ -45,7 +45,7 @@ services:
       api:
         condition: service_started
     environment:
-      - DATABASE_URL=postgresql://tls_user:tls_password@db:5433/tls_guardian
+      - DATABASE_URL=postgresql://tls_user:tls_password@db:5432/tls_guardian
       - TESTSSL_PATH=/usr/local/bin/testssl.sh
     volumes:
       - ./ssl_scans:/app/ssl_scans
