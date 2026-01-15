@@ -15,8 +15,8 @@ This guide provides instructions for deploying TLS Guardian, a self-hosted tool 
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd ssl-monitor
+git clone https://github.com/sht/tls-guardian.git
+cd tls-guardian
 ```
 
 2. Build and start the services:
