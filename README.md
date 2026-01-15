@@ -1,5 +1,7 @@
 # SSL Hygiene Monitor - Deployment Guide
 
+**testssl.sh wrapper** - This tool is a wrapper around [testssl.sh](https://github.com/testssl/testssl.sh) for SSL/TLS scanning capabilities.
+
 This guide provides instructions for deploying the SSL Hygiene Monitor, a self-hosted tool for monitoring SSL/TLS security posture of internal/external web applications. This tool is based on [testssl.sh](https://github.com/testssl/testssl.sh) for SSL/TLS scanning capabilities.
 
 ## Prerequisites
