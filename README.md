@@ -24,9 +24,19 @@ docker-compose up -d
 
 3. Access the dashboard:
    - Frontend: http://localhost:3000
-   - API: http://localhost:5000/api/applications
+   - API: http://localhost:5001/api/applications
 
 4. Add your first application via the web interface or API
+
+## Automatic Restart After Docker Desktop Restart
+
+The application is configured with automatic restart policies. After Docker Desktop is restarted, all services will automatically start in the correct order:
+- Database (ssl_monitor_db)
+- API (ssl_monitor_api)
+- Scheduler (ssl_monitor_scheduler)
+- Frontend (ssl_monitor_frontend)
+
+This ensures that the "Add Application" functionality continues to work after Docker Desktop restarts without requiring manual intervention.
 
 ## Configuration
 
@@ -53,7 +63,7 @@ SCAN_TIME_OF_DAY=2
 Applications can be added via the web dashboard or using the API:
 
 ```bash
-curl -X POST http://localhost:5000/api/applications \
+curl -X POST http://localhost:5001/api/applications \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com", "name": "Example Application"}'
 ```
@@ -155,12 +165,19 @@ docker logs ssl_monitor_scheduler
 docker logs ssl_monitor_db
 ```
 
+### API Access
+
+The API is available at:
+- Base URL: http://localhost:5001
+- Applications endpoint: http://localhost:5001/api/applications
+- Health check: http://localhost:5001/api/summary
+
 ### Manual Scan
 
 Trigger a manual scan for a specific application:
 
 ```bash
-curl -X POST http://localhost:5000/api/scan/{application_id}
+curl -X POST http://localhost:5001/api/scan/{application_id}
 ```
 
 ### Updating the System
@@ -182,8 +199,9 @@ docker-compose up -d
 ### Common Issues
 
 1. **Permission Errors**: Ensure Docker has access to required directories
-2. **Connection Timeouts**: Check firewall settings for ports 3000, 5000, 5432
+2. **Connection Timeouts**: Check firewall settings for ports 3000, 5001, 5432
 3. **Scan Failures**: Verify target URLs are accessible from the container
+4. **"Add Application" functionality not working after Docker restart**: This issue has been resolved with automatic restart policies. After Docker Desktop restarts, all services will automatically restart in the correct order with proper database readiness checks.
 
 ### Debugging Scans
 

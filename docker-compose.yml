@@ -17,9 +17,12 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    restart: unless-stopped
 
   api:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.api
     container_name: ssl_monitor_api
     depends_on:
       db:
@@ -31,9 +34,7 @@ services:
       - "5001:5000"
     volumes:
       - ./ssl_scans:/app/ssl_scans  # For storing raw scan outputs
-    command: >
-      sh -c "python -c \"from api import db; from api import app; app.app_context().push(); db.create_all()\" &&
-             gunicorn --bind 0.0.0.0:5000 --workers 2 --timeout 600 api:app"
+    restart: unless-stopped
 
   scheduler:
     build: .

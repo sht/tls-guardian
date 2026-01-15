@@ -365,7 +365,39 @@ def get_summary():
         'last_scan_time': latest_scan.isoformat() if latest_scan else None
     })
 
+def wait_for_db(max_retries=30, delay=1):
+    """
+    Wait for the database to become available by attempting to connect repeatedly.
+
+    Args:
+        max_retries: Maximum number of connection attempts
+        delay: Delay in seconds between attempts
+    """
+    import time
+
+    for attempt in range(max_retries):
+        try:
+            with app.app_context():
+                # Try to establish a connection to the database
+                db.session.execute(db.text('SELECT 1'))
+                print(f"Database connection successful on attempt {attempt + 1}")
+                return True
+        except Exception as e:
+            print(f"Database connection attempt {attempt + 1} failed: {e}")
+            if attempt < max_retries - 1:
+                print(f"Retrying in {delay} seconds...")
+                time.sleep(delay)
+            else:
+                print("Max retries reached. Database connection failed.")
+                return False
+    return False
+
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=False, host='0.0.0.0', port=5000)
+    # Wait for database to be ready before proceeding
+    if wait_for_db():
+        with app.app_context():
+            db.create_all()
+        app.run(debug=False, host='0.0.0.0', port=5000)
+    else:
+        print("Failed to connect to database after multiple attempts. Exiting.")
+        exit(1)

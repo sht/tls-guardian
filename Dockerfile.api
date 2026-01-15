@@ -1,4 +1,4 @@
-# Dockerfile - Base image for both API and Scheduler
+# Dockerfile for API service with startup script
 FROM python:3.10-slim
 
 # Set environment variables
@@ -33,6 +33,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . /app/
 
+# Copy startup script before creating the user
+COPY startup.sh /app/startup.sh
+RUN chmod +x /app/startup.sh
+
 # Create non-root user
 RUN adduser --disabled-password --gecos '' appuser
 RUN chown -R appuser:appuser /app
@@ -41,5 +45,5 @@ USER appuser
 # Expose port
 EXPOSE 5000
 
-# Default command - will be overridden by docker-compose.yml
-CMD ["python", "api.py"]
+# Run the application
+CMD ["/app/startup.sh"]
