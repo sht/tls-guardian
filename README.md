@@ -1,8 +1,8 @@
-# SSL Hygiene Monitor - Deployment Guide
+# TLS Guardian - Deployment Guide
 
 **testssl.sh wrapper** - This tool is a wrapper around [testssl.sh](https://github.com/testssl/testssl.sh) for SSL/TLS scanning capabilities.
 
-This guide provides instructions for deploying the SSL Hygiene Monitor, a self-hosted tool for monitoring SSL/TLS security posture of internal/external web applications. This tool is based on [testssl.sh](https://github.com/testssl/testssl.sh) for SSL/TLS scanning capabilities.
+This guide provides instructions for deploying TLS Guardian, a self-hosted tool for monitoring SSL/TLS security posture of internal/external web applications. This tool is based on [testssl.sh](https://github.com/testssl/testssl.sh) for SSL/TLS scanning capabilities.
 
 ## Prerequisites
 
@@ -33,10 +33,10 @@ docker-compose up -d
 ## Automatic Restart After Docker Desktop Restart
 
 The application is configured with automatic restart policies. After Docker Desktop is restarted, all services will automatically start in the correct order:
-- Database (ssl_monitor_db)
-- API (ssl_monitor_api)
-- Scheduler (ssl_monitor_scheduler)
-- Frontend (ssl_monitor_frontend)
+- Database (tls_guardian_db)
+- API (tls_guardian_api)
+- Scheduler (tls_guardian_scheduler)
+- Frontend (tls_guardian_frontend)
 
 This ensures that the "Add Application" functionality continues to work after Docker Desktop restarts without requiring manual intervention.
 
@@ -48,7 +48,7 @@ The application can be configured using environment variables in a `.env` file:
 
 ```bash
 # Database configuration
-DATABASE_URL=postgresql://ssl_user:ssl_password@db:5432/ssl_monitor
+DATABASE_URL=postgresql://tls_user:tls_password@db:5432/tls_guardian
 
 # Timezone for scheduler (default: UTC)
 TZ=UTC
@@ -151,20 +151,20 @@ The system provides comprehensive SSL information similar to SSL Labs:
 ### Backup Database
 
 ```bash
-docker exec ssl_monitor_db pg_dump -U ssl_user ssl_monitor > backup.sql
+docker exec tls_guardian_db pg_dump -U tls_user tls_guardian > backup.sql
 ```
 
 ### View Logs
 
 ```bash
 # API logs
-docker logs ssl_monitor_api
+docker logs tls_guardian_api
 
 # Scheduler logs
-docker logs ssl_monitor_scheduler
+docker logs tls_guardian_scheduler
 
 # Database logs
-docker logs ssl_monitor_db
+docker logs tls_guardian_db
 ```
 
 ### API Access
@@ -209,7 +209,7 @@ docker-compose up -d
 
 Check scheduler logs for scan errors:
 ```bash
-docker logs ssl_monitor_scheduler
+docker logs tls_guardian_scheduler
 ```
 
 ### Resource Usage

@@ -1,5 +1,5 @@
 {
-  "name": "ssl-monitor-frontend",
+  "name": "tls-guardian-frontend",
   "version": "0.1.0",
   "private": true,
   "dependencies": {

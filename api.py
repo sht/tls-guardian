@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 app = Flask(__name__)
 
 # Use environment variable for database URL or default to SQLite
-DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///ssl_monitor.db'
+DATABASE_URL = os.environ.get('DATABASE_URL') or 'sqlite:///tls_guardian.db'
 app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 

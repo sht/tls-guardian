@@ -1,6 +1,6 @@
 {
-  "short_name": "SSL Monitor",
-  "name": "SSL Hygiene Monitor",
+  "short_name": "TLS Guardian",
+  "name": "TLS Guardian",
   "icons": [
     {
       "src": "favicon.ico",
