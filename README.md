@@ -9,7 +9,7 @@ This guide provides instructions for deploying TLS Guardian, a self-hosted tool 
 - Docker and Docker Compose installed
 - At least 2GB of RAM available
 - Access to target URLs for scanning
-- Port 3000, 5000, and 5432 available (or configure custom ports)
+- Port 3000, 5000, and 5433 available (or configure custom ports)
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ The application can be configured using environment variables in a `.env` file:
 
 ```bash
 # Database configuration
-DATABASE_URL=postgresql://tls_user:tls_password@db:5432/tls_guardian
+DATABASE_URL=postgresql://tls_user:tls_password@db:5433/tls_guardian
 
 # Timezone for scheduler (default: UTC)
 TZ=UTC
@@ -201,7 +201,7 @@ docker-compose up -d
 ### Common Issues
 
 1. **Permission Errors**: Ensure Docker has access to required directories
-2. **Connection Timeouts**: Check firewall settings for ports 3000, 5001, 5432
+2. **Connection Timeouts**: Check firewall settings for ports 3000, 5001, 5433
 3. **Scan Failures**: Verify target URLs are accessible from the container
 4. **"Add Application" functionality not working after Docker restart**: This issue has been resolved with automatic restart policies. After Docker Desktop restarts, all services will automatically restart in the correct order with proper database readiness checks.
 
