@@ -12,7 +12,7 @@ import {
 import { Input } from '../components/ui/input';
 import StatCard from '../components/StatCard';
 import ApplicationCard from '../components/ApplicationCard';
-import { Shield, AlertTriangle, CheckCircle, XCircle, Plus } from 'lucide-react';
+import { Shield, AlertTriangle, CheckCircle, XCircle, Plus, Zap } from 'lucide-react';
 import EditApplicationDialog from '../components/EditApplicationDialog';
 
 const Dashboard = () => {
@@ -26,10 +26,44 @@ const Dashboard = () => {
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [activeScan, setActiveScan] = useState(null);
+  const [scanProgress, setScanProgress] = useState(0);
 
   useEffect(() => {
     fetchApplications();
   }, []);
+
+  // Poll for active scans every 2 seconds
+  useEffect(() => {
+    const pollInterval = setInterval(() => {
+      if (applications.length > 0) {
+        // Check for any scanning applications
+        const scanning = applications.find(app => {
+          const lastScan = new Date(app.last_scan_time);
+          const now = new Date();
+          // If last scan was within the last 5 minutes and still updating, consider it scanning
+          const recentScan = (now - lastScan) < (5 * 60 * 1000);
+          return recentScan && app.status?.toLowerCase() === 'scanning';
+        });
+
+        if (scanning) {
+          setActiveScan(scanning);
+          // Simulate progress (0-90%, actual completion detected on next fetch)
+          setScanProgress(prev => {
+            const newProgress = prev + Math.random() * 15;
+            return Math.min(newProgress, 90);
+          });
+        } else if (activeScan) {
+          // Scan completed
+          setActiveScan(null);
+          setScanProgress(0);
+          fetchApplications(); // Refresh to get updated data
+        }
+      }
+    }, 2000);
+
+    return () => clearInterval(pollInterval);
+  }, [applications, activeScan]);
 
   const fetchApplications = async () => {
     try {
@@ -295,8 +329,32 @@ const Dashboard = () => {
           </Dialog>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {/* Active Scan Notification */}
+        {activeScan && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-600 animate-pulse" />
+                <span className="font-semibold text-blue-900">
+                  Scanning: {activeScan.name}
+                </span>
+              </div>
+              <span className="text-sm font-medium text-blue-600">{Math.round(scanProgress)}%</span>
+            </div>
+            <div className="w-full bg-blue-200 rounded-full h-2">
+              <div
+                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${scanProgress}%` }}
+              ></div>
+            </div>
+            <p className="text-xs text-blue-700 mt-2">
+              {activeScan.url}
+            </p>
+          </div>
+        )}
+
+        {/* Stats Cards - Show only critical ones on mobile */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4 mb-8">
           <StatCard
             title="Total Applications"
             value={totalApps}
@@ -334,20 +392,18 @@ const Dashboard = () => {
 
             {/* Search and Filter Controls */}
             {applications.length > 0 && (
-              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                <div className="relative flex-1 md:flex-none">
-                  <Input
-                    type="text"
-                    placeholder="Search by name or URL..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
+              <div className="flex flex-col gap-2 w-full md:w-auto">
+                <Input
+                  type="text"
+                  placeholder="Search..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full text-sm"
+                />
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  className="px-2 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   <option value="all">All Statuses</option>
                   <option value="pass">Passing</option>

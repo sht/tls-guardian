@@ -111,7 +111,7 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
           </div>
         )}
 
-        <div className="flex items-center gap-5">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-5">
           {/* Status Badge */}
           <div className="flex-shrink-0">
             <GradeBadge grade={application.status} size="lg" />
@@ -119,16 +119,16 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
 
           {/* Application Info */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-lg text-gray-900 truncate">
+            <h3 className="font-semibold text-base sm:text-lg text-gray-900 truncate">
               {application.name}
             </h3>
-            <p className="text-sm text-gray-500 truncate mt-0.5">
+            <p className="text-xs sm:text-sm text-gray-500 truncate mt-0.5">
               {application.url}
             </p>
 
-            <div className="flex items-center gap-4 mt-3 text-sm flex-wrap">
+            <div className="flex items-center gap-3 sm:gap-4 mt-2 sm:mt-3 text-xs sm:text-sm flex-wrap">
               <div className="flex items-center text-gray-500">
-                <Clock className="w-4 h-4 mr-1.5" />
+                <Clock className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                 {formatDate(application.last_scan_time)}
               </div>
 
@@ -136,7 +136,7 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
                 <div className={`flex items-center ${
                   application.issue_count > 0 ? 'text-red-600' : 'text-green-600'
                 }`}>
-                  <AlertCircle className="w-4 h-4 mr-1.5" />
+                  <AlertCircle className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
                   {application.issue_count} {application.issue_count === 1 ? 'issue' : 'issues'}
                 </div>
               )}
@@ -144,7 +144,7 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
           </div>
 
           {/* Actions */}
-          <div className="flex-shrink-0 flex gap-2">
+          <div className="flex-shrink-0 flex gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="outline"

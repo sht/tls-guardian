@@ -221,3 +221,133 @@ export function getGradeColor(grade) {
       return 'text-gray-600 bg-gray-100';
   }
 }
+
+/**
+ * Predicts grade improvements by fixing issues
+ * @param {Object} application - The application object
+ * @param {Object} fixedIssueCategories - Object with categories to fix (e.g., { protocol: true, cipher: false })
+ * @returns {Object} - Predicted improvements
+ */
+export function predictGradeImprovement(application, fixedIssueCategories = {}) {
+  const currentGradeInfo = calculateGrade(application);
+  const currentScore = currentGradeInfo.score;
+
+  let predictedScore = currentScore;
+  const improvementDetails = {};
+
+  const detailedInfo = application.detailed_ssl_info || {};
+
+  // Protocol improvements
+  if (fixedIssueCategories.protocol) {
+    let protocolImprovement = 0;
+
+    // If we have weak protocols, removing them would improve score
+    const protocols = detailedInfo.protocol_info || {};
+    if (protocols['TLS1'] && protocols['TLS1'].finding.toLowerCase().includes('offered')) {
+      protocolImprovement += 20;
+    }
+    if (protocols['TLS1_1'] && protocols['TLS1_1'].finding.toLowerCase().includes('offered')) {
+      protocolImprovement += 15;
+    }
+    if (protocols['SSLv2'] && protocols['SSLv2'].finding.toLowerCase().includes('offered')) {
+      protocolImprovement += 30;
+    }
+    if (protocols['SSLv3'] && protocols['SSLv3'].finding.toLowerCase().includes('offered')) {
+      protocolImprovement += 25;
+    }
+
+    // If we don't have TLS 1.3, adding it would improve score
+    if (!protocols['TLS1_3'] || !protocols['TLS1_3'].finding.toLowerCase().includes('offered')) {
+      protocolImprovement += 15;
+    }
+
+    predictedScore += protocolImprovement;
+    improvementDetails.protocol = protocolImprovement;
+  }
+
+  // Cipher improvements
+  if (fixedIssueCategories.cipher) {
+    let cipherImprovement = 0;
+    const ciphers = detailedInfo.cipher_info || {};
+
+    // Count weak ciphers that could be removed
+    for (const [key, value] of Object.entries(ciphers)) {
+      const finding = value.finding.toLowerCase();
+      if (key.includes('weak') || key.includes('null') || key.includes('export') ||
+          key.includes('LOW') || key.includes('NULL') || finding.includes('rc4') ||
+          finding.includes('3des') || finding.includes('idea')) {
+        cipherImprovement += 5;
+      }
+    }
+
+    cipherImprovement = Math.min(cipherImprovement, 20); // Cap improvement
+    predictedScore += cipherImprovement;
+    improvementDetails.cipher = cipherImprovement;
+  }
+
+  // Certificate improvements
+  if (fixedIssueCategories.certificate) {
+    let certImprovement = 0;
+
+    const certInfo = detailedInfo.certificate_info && Object.keys(detailedInfo.certificate_info).length > 0
+      ? detailedInfo.certificate_info
+      : detailedInfo.misc_info;
+
+    // If key size is weak, upgrading would help
+    if (certInfo && certInfo['cert_keySize']) {
+      const keySizeMatch = certInfo['cert_keySize'].finding.match(/(\d+)\s*bits/);
+      if (keySizeMatch) {
+        const keySize = parseInt(keySizeMatch[1]);
+        if (keySize < 2048) {
+          certImprovement += 15;
+        }
+      }
+    }
+
+    // If signature algorithm is weak
+    if (certInfo && certInfo['cert_signatureAlgorithm']) {
+      const sigAlg = certInfo['cert_signatureAlgorithm'].finding.toLowerCase();
+      if (sigAlg.includes('sha1')) {
+        certImprovement += 10;
+      }
+    }
+
+    predictedScore += certImprovement;
+    improvementDetails.certificate = certImprovement;
+  }
+
+  // Cap score at 100
+  predictedScore = Math.min(100, predictedScore);
+
+  // Calculate predicted grade
+  let predictedGrade = 'T';
+  if (predictedScore >= 90) {
+    predictedGrade = 'A+';
+  } else if (predictedScore >= 80) {
+    predictedGrade = 'A';
+  } else if (predictedScore >= 70) {
+    predictedGrade = 'B+';
+  } else if (predictedScore >= 60) {
+    predictedGrade = 'B';
+  } else if (predictedScore >= 50) {
+    predictedGrade = 'C+';
+  } else if (predictedScore >= 40) {
+    predictedGrade = 'C';
+  } else if (predictedScore >= 30) {
+    predictedGrade = 'D';
+  } else if (predictedScore >= 20) {
+    predictedGrade = 'E';
+  } else if (predictedScore >= 10) {
+    predictedGrade = 'F';
+  }
+
+  return {
+    currentScore: currentScore,
+    currentGrade: currentGradeInfo.grade,
+    predictedScore: Math.round(predictedScore),
+    predictedGrade: predictedGrade,
+    totalImprovement: Math.round(predictedScore - currentScore),
+    improvementDetails: improvementDetails,
+    improvements: Object.keys(improvementDetails).filter(k => improvementDetails[k] > 0)
+  };
+}

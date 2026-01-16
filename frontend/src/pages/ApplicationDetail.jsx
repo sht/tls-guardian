@@ -4,8 +4,8 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import ScoreBar from '../components/ScoreBar';
-import { ArrowLeft, RefreshCw, Shield, Lock, AlertTriangle, CheckCircle, ExternalLink, Trash2 } from 'lucide-react';
-import { calculateGrade } from '../lib/grades';
+import { ArrowLeft, RefreshCw, Shield, Lock, AlertTriangle, CheckCircle, ExternalLink, Trash2, ChevronDown, X } from 'lucide-react';
+import { calculateGrade, predictGradeImprovement } from '../lib/grades';
 import { getVulnerabilitySeverity, getCVECategory } from '../lib/utils';
 
 const ApplicationDetail = () => {
@@ -16,6 +16,13 @@ const ApplicationDetail = () => {
   const [rescanning, setRescanning] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
+  const [selectedFixes, setSelectedFixes] = useState({
+    protocol: false,
+    cipher: false,
+    certificate: false
+  });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('summary');
 
   const fetchApplicationDetail = useCallback(async () => {
     try {
@@ -507,8 +514,9 @@ const ApplicationDetail = () => {
         />
 
         {/* Detailed SSL Information Tabs */}
-        <Tabs defaultValue="summary" className="space-y-4">
-          <TabsList className="w-full justify-start bg-white border rounded-lg p-1 flex-wrap">
+        <Tabs defaultValue="summary" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          {/* Desktop Tab List */}
+          <TabsList className="hidden md:flex w-full justify-start bg-white border rounded-lg p-1 flex-wrap">
             <TabsTrigger value="summary" className="data-[state=active]:bg-gray-100">Summary</TabsTrigger>
             <TabsTrigger value="protocols" className="data-[state=active]:bg-gray-100">Protocols</TabsTrigger>
             <TabsTrigger value="ciphers" className="data-[state=active]:bg-gray-100">Ciphers</TabsTrigger>
@@ -517,6 +525,58 @@ const ApplicationDetail = () => {
             <TabsTrigger value="scan-history" className="data-[state=active]:bg-gray-100">Scan History</TabsTrigger>
             <TabsTrigger value="misc" className="data-[state=active]:bg-gray-100">Miscellaneous</TabsTrigger>
           </TabsList>
+
+          {/* Mobile Tab Menu */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="w-full flex items-center justify-between bg-white border border-gray-300 rounded-lg p-3 font-medium text-gray-900"
+            >
+              <span className="flex items-center gap-2">
+                {activeTab === 'summary' && 'Summary'}
+                {activeTab === 'protocols' && 'Protocols'}
+                {activeTab === 'ciphers' && 'Ciphers'}
+                {activeTab === 'certificates' && 'Certificates'}
+                {activeTab === 'vulnerabilities' && 'Vulnerabilities'}
+                {activeTab === 'scan-history' && 'Scan History'}
+                {activeTab === 'misc' && 'Miscellaneous'}
+              </span>
+              {mobileMenuOpen ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
+            </button>
+
+            {mobileMenuOpen && (
+              <div className="mt-2 bg-white border border-gray-300 rounded-lg overflow-hidden">
+                {[
+                  { value: 'summary', label: 'Summary' },
+                  { value: 'protocols', label: 'Protocols' },
+                  { value: 'ciphers', label: 'Ciphers' },
+                  { value: 'certificates', label: 'Certificates' },
+                  { value: 'vulnerabilities', label: 'Vulnerabilities' },
+                  { value: 'scan-history', label: 'Scan History' },
+                  { value: 'misc', label: 'Miscellaneous' }
+                ].map(tab => (
+                  <button
+                    key={tab.value}
+                    onClick={() => {
+                      setActiveTab(tab.value);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-3 border-b last:border-b-0 ${
+                      activeTab === tab.value
+                        ? 'bg-gray-100 font-semibold text-blue-600'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
 
           <TabsContent value="summary">
             <Card>
@@ -653,6 +713,86 @@ const ApplicationDetail = () => {
                     <p className="text-green-600 text-sm mt-1">This application has a clean SSL/TLS configuration.</p>
                   </div>
                 )}
+
+                {/* Grade Improvement Predictor */}
+                <div className="mt-8">
+                  <h3 className="text-lg font-semibold mb-4">Grade Improvement Roadmap</h3>
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
+                    <div className="mb-4">
+                      <p className="text-sm text-gray-600 mb-3">Select areas to improve and see your potential grade:</p>
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50 border border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedFixes.protocol}
+                            onChange={(e) => setSelectedFixes({ ...selectedFixes, protocol: e.target.checked })}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-sm font-medium">Fix Protocol Issues (disable TLS 1.0/1.1, enable TLS 1.3)</span>
+                        </label>
+                        <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50 border border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedFixes.cipher}
+                            onChange={(e) => setSelectedFixes({ ...selectedFixes, cipher: e.target.checked })}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-sm font-medium">Remove Weak Ciphers (RC4, 3DES, NULL)</span>
+                        </label>
+                        <label className="flex items-center gap-3 p-3 bg-white rounded-lg cursor-pointer hover:bg-gray-50 border border-gray-200">
+                          <input
+                            type="checkbox"
+                            checked={selectedFixes.certificate}
+                            onChange={(e) => setSelectedFixes({ ...selectedFixes, certificate: e.target.checked })}
+                            className="w-4 h-4 rounded"
+                          />
+                          <span className="text-sm font-medium">Upgrade Certificate (stronger key size, SHA-256)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Show prediction */}
+                    {(selectedFixes.protocol || selectedFixes.cipher || selectedFixes.certificate) && (() => {
+                      const prediction = predictGradeImprovement(application, selectedFixes);
+                      return (
+                        <div className="mt-4 p-4 bg-white rounded-lg border border-blue-200">
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600 mb-1">Current</p>
+                              <div className="text-3xl font-bold text-blue-600">{prediction.currentGrade}</div>
+                              <p className="text-xs text-gray-500 mt-1">{prediction.currentScore} pts</p>
+                            </div>
+                            <div className="flex items-center justify-center">
+                              <div className="text-center">
+                                <p className="text-2xl font-bold text-green-500">→</p>
+                                <p className="text-xs text-green-600 font-semibold mt-1">
+                                  +{prediction.totalImprovement}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-xs text-gray-600 mb-1">Potential</p>
+                              <div className="text-3xl font-bold text-green-600">{prediction.predictedGrade}</div>
+                              <p className="text-xs text-gray-500 mt-1">{prediction.predictedScore} pts</p>
+                            </div>
+                          </div>
+                          {prediction.improvements.length > 0 && (
+                            <div className="mt-3 pt-3 border-t border-gray-200">
+                              <p className="text-xs font-semibold text-gray-700 mb-2">Improvements by category:</p>
+                              <div className="flex gap-2 flex-wrap">
+                                {prediction.improvements.map(cat => (
+                                  <span key={cat} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                                    {cat}: +{prediction.improvementDetails[cat]}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
