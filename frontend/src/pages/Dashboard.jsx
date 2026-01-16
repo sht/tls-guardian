@@ -24,6 +24,8 @@ const Dashboard = () => {
   const [adding, setAdding] = useState(false);
   const [editingApplication, setEditingApplication] = useState(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     fetchApplications();
@@ -158,6 +160,30 @@ const Dashboard = () => {
     setEditingApplication(application);
     setShowEditDialog(true);
   };
+
+  // Filter applications
+  const filteredApplications = applications.filter(app => {
+    // Search filter (by name or URL)
+    const matchesSearch = searchQuery === '' ||
+      app.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      app.url.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Status filter
+    let matchesStatus = true;
+    if (filterStatus !== 'all') {
+      const status = app.status?.toLowerCase() || '';
+
+      if (filterStatus === 'pass') {
+        matchesStatus = status === 'pass' || status.startsWith('a') || status === 'b';
+      } else if (filterStatus === 'warn') {
+        matchesStatus = status === 'warn' || status === 'c';
+      } else if (filterStatus === 'fail') {
+        matchesStatus = status === 'fail' || status === 'd' || status === 'e' || status === 'f';
+      }
+    }
+
+    return matchesSearch && matchesStatus;
+  });
 
   // Calculate statistics
   const totalApps = applications.length;
@@ -298,12 +324,39 @@ const Dashboard = () => {
 
         {/* Applications List */}
         <div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">
-            Applications
+          <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">
+              Applications
+              {applications.length > 0 && (
+                <span className="text-gray-400 font-normal ml-2">({filteredApplications.length}/{applications.length})</span>
+              )}
+            </h2>
+
+            {/* Search and Filter Controls */}
             {applications.length > 0 && (
-              <span className="text-gray-400 font-normal ml-2">({applications.length})</span>
+              <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                <div className="relative flex-1 md:flex-none">
+                  <Input
+                    type="text"
+                    placeholder="Search by name or URL..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+                <select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="pass">Passing</option>
+                  <option value="warn">Warnings</option>
+                  <option value="fail">Failing</option>
+                </select>
+              </div>
             )}
-          </h2>
+          </div>
 
           {applications.length === 0 ? (
             <Card className="border-dashed">
@@ -323,9 +376,36 @@ const Dashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+          ) : filteredApplications.length === 0 ? (
+            <Card className="border-dashed">
+              <CardContent className="py-16 text-center">
+                <div className="mx-auto w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                  <Shield className="w-8 h-8 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  No applications found
+                </h3>
+                <p className="text-gray-500 mb-6 max-w-sm mx-auto">
+                  {searchQuery || filterStatus !== 'all'
+                    ? 'Try adjusting your search or filter criteria.'
+                    : 'No applications match your filters.'}
+                </p>
+                {(searchQuery || filterStatus !== 'all') && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery('');
+                      setFilterStatus('all');
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-3">
-              {applications.map((app) => (
+              {filteredApplications.map((app) => (
                 <ApplicationCard
                   key={app.id}
                   application={app}

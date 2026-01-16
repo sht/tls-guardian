@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import GradeBadge from './GradeBadge';
-import { RefreshCw, Trash2, Clock, AlertCircle, Pencil } from 'lucide-react';
+import { RefreshCw, Trash2, Clock, AlertCircle, Pencil, AlertTriangle } from 'lucide-react';
 
 const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
   const navigate = useNavigate();
@@ -26,12 +26,91 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
     return date.toLocaleDateString();
   };
 
+  // Check certificate expiration
+  const certExpirationStatus = useMemo(() => {
+    if (!application.detailed_ssl_info?.certificate_info) {
+      return null;
+    }
+
+    const certInfo = application.detailed_ssl_info.certificate_info;
+    let expirationDate = null;
+
+    // Look for certificate expiration date in the cert info
+    for (const [key, value] of Object.entries(certInfo)) {
+      if (key.toLowerCase().includes('not_after') ||
+          key.toLowerCase().includes('expires') ||
+          key.toLowerCase().includes('expiration')) {
+        if (value.finding) {
+          try {
+            const parsed = new Date(value.finding);
+            if (!isNaN(parsed.getTime())) {
+              expirationDate = parsed;
+              break;
+            }
+          } catch (e) {
+            // Continue searching
+          }
+        }
+      }
+    }
+
+    if (!expirationDate) {
+      return null;
+    }
+
+    const now = new Date();
+    const daysUntilExpiry = Math.floor((expirationDate - now) / (1000 * 60 * 60 * 24));
+
+    if (daysUntilExpiry < 0) {
+      return { status: 'expired', days: Math.abs(daysUntilExpiry) };
+    } else if (daysUntilExpiry <= 7) {
+      return { status: 'critical', days: daysUntilExpiry };
+    } else if (daysUntilExpiry <= 30) {
+      return { status: 'warning', days: daysUntilExpiry };
+    }
+
+    return null;
+  }, [application]);
+
   return (
     <Card
-      className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-transparent hover:border-l-blue-500"
+      className={`hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 ${
+        certExpirationStatus?.status === 'expired' ? 'border-l-red-600 hover:border-l-red-600' :
+        certExpirationStatus?.status === 'critical' ? 'border-l-red-500 hover:border-l-red-500' :
+        certExpirationStatus?.status === 'warning' ? 'border-l-yellow-500 hover:border-l-yellow-500' :
+        'border-l-transparent hover:border-l-blue-500'
+      }`}
       onClick={handleClick}
     >
       <CardContent className="p-5">
+        {/* Certificate Expiration Warning Banner */}
+        {certExpirationStatus && (
+          <div className={`mb-4 p-3 rounded-lg flex items-start gap-3 ${
+            certExpirationStatus.status === 'expired' ? 'bg-red-50 border border-red-200' :
+            certExpirationStatus.status === 'critical' ? 'bg-red-50 border border-red-200' :
+            'bg-yellow-50 border border-yellow-200'
+          }`}>
+            <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${
+              certExpirationStatus.status === 'expired' ? 'text-red-600' :
+              certExpirationStatus.status === 'critical' ? 'text-red-600' :
+              'text-yellow-600'
+            }`} />
+            <div>
+              <p className={`text-sm font-semibold ${
+                certExpirationStatus.status === 'expired' ? 'text-red-800' :
+                certExpirationStatus.status === 'critical' ? 'text-red-800' :
+                'text-yellow-800'
+              }`}>
+                {certExpirationStatus.status === 'expired'
+                  ? `Certificate expired ${certExpirationStatus.days} day${certExpirationStatus.days > 1 ? 's' : ''} ago`
+                  : certExpirationStatus.status === 'critical'
+                  ? `Certificate expires in ${certExpirationStatus.days} day${certExpirationStatus.days > 1 ? 's' : ''}`
+                  : `Certificate expires in ${certExpirationStatus.days} day${certExpirationStatus.days > 1 ? 's' : ''}`}
+              </p>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-5">
           {/* Status Badge */}
           <div className="flex-shrink-0">
@@ -47,7 +126,7 @@ const ApplicationCard = ({ application, onRescan, onDelete, onEdit }) => {
               {application.url}
             </p>
 
-            <div className="flex items-center gap-4 mt-3 text-sm">
+            <div className="flex items-center gap-4 mt-3 text-sm flex-wrap">
               <div className="flex items-center text-gray-500">
                 <Clock className="w-4 h-4 mr-1.5" />
                 {formatDate(application.last_scan_time)}

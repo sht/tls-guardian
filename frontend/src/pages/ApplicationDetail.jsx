@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs'
 import ScoreBar from '../components/ScoreBar';
 import { ArrowLeft, RefreshCw, Shield, Lock, AlertTriangle, CheckCircle, ExternalLink, Trash2 } from 'lucide-react';
 import { calculateGrade } from '../lib/grades';
+import { getVulnerabilitySeverity, getCVECategory } from '../lib/utils';
 
 const ApplicationDetail = () => {
   const { id } = useParams();
@@ -143,6 +144,43 @@ const ApplicationDetail = () => {
     );
   }
 
+  // Extract certificate expiration information
+  const getCertExpirationInfo = () => {
+    if (!application.detailed_ssl_info?.certificate_info) {
+      return null;
+    }
+
+    const certInfo = application.detailed_ssl_info.certificate_info;
+    for (const [key, value] of Object.entries(certInfo)) {
+      if (key.toLowerCase().includes('not_after') ||
+          key.toLowerCase().includes('expires') ||
+          key.toLowerCase().includes('expiration')) {
+        if (value.finding) {
+          try {
+            const expirationDate = new Date(value.finding);
+            if (!isNaN(expirationDate.getTime())) {
+              const now = new Date();
+              const daysUntilExpiry = Math.floor((expirationDate - now) / (1000 * 60 * 60 * 24));
+
+              return {
+                date: expirationDate,
+                daysUntilExpiry: daysUntilExpiry,
+                isExpired: daysUntilExpiry < 0,
+                isCritical: daysUntilExpiry >= 0 && daysUntilExpiry <= 7,
+                isWarning: daysUntilExpiry > 7 && daysUntilExpiry <= 30
+              };
+            }
+          } catch (e) {
+            // Continue
+          }
+        }
+      }
+    }
+    return null;
+  };
+
+  const certExpirationInfo = getCertExpirationInfo();
+
   // Check if application has no scan data yet (initial scan in progress)
   const hasNoScanData = !application.last_scan_time &&
                        (!application.detailed_ssl_info || Object.keys(application.detailed_ssl_info).length === 0) &&
@@ -274,6 +312,93 @@ const ApplicationDetail = () => {
     );
   };
 
+  // Enhanced vulnerability rendering with severity grouping and categories
+  const renderVulnerabilities = (vulnerabilityData) => {
+    if (!vulnerabilityData || Object.keys(vulnerabilityData).length === 0) {
+      return (
+        <div className="text-center py-12">
+          <CheckCircle className="w-12 h-12 mx-auto mb-3 text-green-400" />
+          <p className="text-gray-700 font-semibold">No vulnerabilities found</p>
+          <p className="text-sm text-gray-500 mt-1">This SSL/TLS configuration passed vulnerability assessments.</p>
+        </div>
+      );
+    }
+
+    // Group vulnerabilities by severity
+    const grouped = {};
+    Object.entries(vulnerabilityData).forEach(([key, value]) => {
+      const severity = value.severity?.toUpperCase() || 'INFO';
+      if (!grouped[severity]) grouped[severity] = [];
+      grouped[severity].push({ key, ...value });
+    });
+
+    // Sort by severity priority
+    const severityOrder = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2, INFO: 1, OK: 0 };
+    const sortedSeverities = Object.keys(grouped).sort((a, b) => (severityOrder[b] || 0) - (severityOrder[a] || 0));
+
+    return (
+      <div className="space-y-6">
+        {/* Summary Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'OK'].map(sev => {
+            const severityInfo = getVulnerabilitySeverity(sev);
+            const count = grouped[sev]?.length || 0;
+            return (
+              <div key={sev} className={`p-3 rounded-lg border text-center ${
+                severityInfo.bgColor
+              }`}>
+                <div className={`text-2xl font-bold ${severityInfo.badgeText}`}>
+                  {count}
+                </div>
+                <div className={`text-xs font-medium ${severityInfo.badgeText}`}>
+                  {severityInfo.level}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Vulnerabilities grouped by severity */}
+        {sortedSeverities.map(severity => {
+          const severityInfo = getVulnerabilitySeverity(severity);
+          return (
+            <div key={severity}>
+              <h3 className={`text-sm font-semibold mb-3 flex items-center gap-2 ${severityInfo.badgeText}`}>
+                <div className={`w-3 h-3 rounded-full`} style={{backgroundColor: severityInfo.color === 'red' ? '#dc2626' : severityInfo.color === 'yellow' ? '#eab308' : severityInfo.color === 'orange' ? '#ea580c' : '#22c55e'}}></div>
+                {severityInfo.level} ({grouped[severity].length})
+              </h3>
+              <div className="space-y-3">
+                {grouped[severity].map((vuln, index) => {
+                  const category = getCVECategory(vuln.key);
+                  return (
+                    <div key={index} className={`p-4 rounded-lg border-l-4 ${severityInfo.bgColor} ${severityInfo.borderColor}`}>
+                      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${severityInfo.badgeBg} ${severityInfo.badgeText}`}>
+                              {severityInfo.level}
+                            </span>
+                            <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700">
+                              {category.category}
+                            </span>
+                          </div>
+                          <h4 className="font-semibold text-gray-900 mb-1">
+                            {vuln.key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                          </h4>
+                          <p className="text-sm text-gray-600">{vuln.finding || 'No details available'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto py-6 px-4">
@@ -399,6 +524,50 @@ const ApplicationDetail = () => {
                 <CardTitle className="text-lg">Scan Summary</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Certificate Expiration Warning */}
+                {certExpirationInfo && (
+                  <div className={`mb-6 p-4 rounded-lg border-l-4 flex items-start gap-4 ${
+                    certExpirationInfo.isExpired ? 'bg-red-50 border-l-red-600 border border-red-200' :
+                    certExpirationInfo.isCritical ? 'bg-red-50 border-l-red-500 border border-red-200' :
+                    'bg-yellow-50 border-l-yellow-500 border border-yellow-200'
+                  }`}>
+                    <AlertTriangle className={`w-6 h-6 flex-shrink-0 ${
+                      certExpirationInfo.isExpired ? 'text-red-600' :
+                      certExpirationInfo.isCritical ? 'text-red-600' :
+                      'text-yellow-600'
+                    }`} />
+                    <div>
+                      <h3 className={`font-semibold mb-1 ${
+                        certExpirationInfo.isExpired ? 'text-red-900' :
+                        certExpirationInfo.isCritical ? 'text-red-900' :
+                        'text-yellow-900'
+                      }`}>
+                        {certExpirationInfo.isExpired
+                          ? `Certificate Expired`
+                          : certExpirationInfo.isCritical
+                          ? `Critical: Certificate Expiring Soon`
+                          : `Warning: Certificate Expiration`}
+                      </h3>
+                      <p className={`text-sm mb-2 ${
+                        certExpirationInfo.isExpired ? 'text-red-800' :
+                        certExpirationInfo.isCritical ? 'text-red-800' :
+                        'text-yellow-800'
+                      }`}>
+                        {certExpirationInfo.isExpired
+                          ? `This certificate expired ${Math.abs(certExpirationInfo.daysUntilExpiry)} day${Math.abs(certExpirationInfo.daysUntilExpiry) > 1 ? 's' : ''} ago on ${certExpirationInfo.date.toDateString()}.`
+                          : `This certificate will expire in ${certExpirationInfo.daysUntilExpiry} day${certExpirationInfo.daysUntilExpiry > 1 ? 's' : ''} on ${certExpirationInfo.date.toDateString()}.`}
+                      </p>
+                      <p className={`text-xs ${
+                        certExpirationInfo.isExpired ? 'text-red-700' :
+                        certExpirationInfo.isCritical ? 'text-red-700' :
+                        'text-yellow-700'
+                      }`}>
+                        Action required: Renew or replace the certificate to maintain secure connections.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="bg-blue-50 border border-blue-100 p-5 rounded-xl">
                     <div className="flex items-center gap-3">
@@ -547,7 +716,7 @@ const ApplicationDetail = () => {
                 <CardTitle className="text-lg">Vulnerability Scan Results</CardTitle>
               </CardHeader>
               <CardContent>
-                {renderDetailedSection('Vulnerability Scan Results',
+                {renderVulnerabilities(
                   (() => {
                     // Combine vulnerabilities from vulnerabilities section with vulnerability-related data from misc_info
                     const vulns = { ...application.detailed_ssl_info?.vulnerabilities || {} };
@@ -570,7 +739,7 @@ const ApplicationDetail = () => {
                           key.toLowerCase().includes('lucky13') ||
                           key.toLowerCase().includes('opossum') ||
                           key.toLowerCase().includes('ticketbleed') ||
-                          key.toLowerCase().includes('secure_client_renego') || // This is the one you mentioned
+                          key.toLowerCase().includes('secure_client_renego') ||
                           key.toLowerCase().includes('secure_renego') ||
                           key.toLowerCase().includes('fallback_scsv') ||
                           key.toLowerCase().includes('sessionresumption') ||
